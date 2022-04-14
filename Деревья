@@ -1,0 +1,91 @@
+#include <iostream>
+using namespace std;
+
+struct tree {
+	char* date;
+	tree* left, * rigth;
+};
+
+int searchoper(char* fr) {
+	int id = -1, block = 0;
+	for (int i = 0; i < strlen(fr); i++) {
+		if (fr[i] == '(') block++;
+		if (fr[i] == ')') block--;
+		if (block == 0 && (fr[i] == '*' || fr[i] == '/' || fr[i] == '+' || fr[i] == '-')) { id = i; }
+	}
+	return id;
+}
+
+char* deletparen(char* fr) {
+	if (fr[0] != '(') return fr;
+	if (searchoper(fr) != -1) return fr;
+	char* buf = new char[strlen(fr) - 1];
+	for (int i = 1, j = 0; i < strlen(buf); i++, j++) buf[j] = fr[i];
+	buf[strlen(buf) - 1] = NULL;
+	return buf;
+}
+
+tree * buildtree(tree * tr, char* fr) { //построение дерева
+	tr = new tree;
+	tr->left = NULL;
+	tr->rigth = NULL;
+	int p = searchoper(fr); //поиск арифметических опреаций
+	if (p == -1) { tr->date = _strdup(fr); return tr; } // не нашли опреацию, возвращаем константу
+	tr->date = new char[2]; tr->date[0] = fr[p]; tr->date[1] = NULL;
+	char* bufl = new char[p];
+	char* bufr = new char[strlen(fr) - p + 1];
+	for (int i = 0, j = 0, k = 0; i < strlen(fr); i++) {
+		if (i < p) { bufl[j] = fr[i]; bufl[j + 1] = NULL; j++; } // копирование текста слева от арифметической опреации
+		if (i > p) { bufr[k] = fr[i]; bufr[k + 1] = NULL; k++; } // копирование текста справа от арифметической опреации
+	}
+	bufl = deletparen(bufl); // удаление скобок
+	bufr = deletparen(bufr); // удаление скобок
+	tr->left = buildtree(tr->left, bufl);
+	tr->rigth = buildtree(tr->rigth, bufr);
+	return tr;
+}
+
+void showtree(tree * tr, int level) { // отображение дерева
+	if (tr == NULL)return;
+	showtree(tr->left, level + 1);
+	for (int i = 0; i < level; i++) cout << "    ";
+	cout << "[" << tr->date << "]" << endl;
+	showtree(tr->rigth, level + 1);
+}
+
+float dectree(tree * tr) {
+	if (tr->left == NULL)return atoi(tr->date);
+	float a = dectree(tr->left);
+	float b = dectree(tr->rigth);
+	float c = 0;
+	switch (tr->date[0])
+	{
+	case('/'): c = a / (float)b; break;
+	case('*'): c = a * b; break;
+	case('+'): c = a + b; break;
+	case('-'): c = a - b; break;
+	}
+	return c;
+}
+
+int main() {
+	char text[255];
+	int sw;
+	setlocale(LC_ALL, "Rus");
+	cout << "Введите выражение: "; //(3*(7-4))-(8/(12/6+2))
+	cin >> text;
+	tree* tr = NULL;
+	tr = buildtree(tr, text);
+	while (1) {
+		cout << "1) Отобразить дерево" << endl;
+		cout << "2) Показать решение" << endl;
+		cout << "3) Выход" << endl;
+		cin >> sw;
+		switch (sw)
+		{
+		case(1): showtree(tr, 0); break;
+		case(2): cout << dectree(tr) << endl; break;
+		case(3): return 0;
+		}
+	}
+}
